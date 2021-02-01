@@ -31,7 +31,10 @@ class _MainPageState extends State<MainPage> {
   @override
   Widget build(BuildContext context) {
     imu.globalAcceleration.addListener(() {
-      text = imu.globalAcceleration.value.toString();
+      text = "East " + imu.globalAcceleration.value[0].toInt().toString() + "\n\n" +
+          "North " + imu.globalAcceleration.value[1].toInt().toString() + "\n\n" +
+          "Down " +imu.globalAcceleration.value[2].toInt().toString();
+      setState(() {});
     });
     return Scaffold(
       body: Center(
