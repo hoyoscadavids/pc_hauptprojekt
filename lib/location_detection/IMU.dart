@@ -18,8 +18,6 @@ class IMU {
   Vector _north = Vector.fillColumn(3);
   Vector _orientation = Vector.fillColumn(3);
 
-
-
   IMU() {
     accelerometerEvents.listen((acceleration) {
       _initialAcceleration = Vector.column([
@@ -52,14 +50,14 @@ class IMU {
         magEvent.z,
       ]);
     });
+  }
 
-    Future.delayed(Duration(milliseconds: 100), () {
-      setReferenceSystem();
-      Timer.periodic(Duration(milliseconds: 10), (timer) {
-        _orientation += calculateOrientationChange(1 / 100);
-        final rotatedAcceleration = rotateBackToOriginalSystem(_localAcceleration);
-        calculateGlobalAcceleration(rotatedAcceleration);
-      });
+  void initializeImu() {
+    setReferenceSystem();
+    Timer.periodic(Duration(milliseconds: 10), (timer) {
+      _orientation += calculateOrientationChange(1 / 100);
+      final rotatedAcceleration = rotateBackToOriginalSystem(_localAcceleration);
+      calculateGlobalAcceleration(rotatedAcceleration);
     });
   }
 
