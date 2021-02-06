@@ -2,7 +2,10 @@
 
 class KalmanFilter {
   // TODO(shc): Calculate real deltaT?
-  KalmanFilter(double deltaT, double initialGpsAccuracy) {
+  KalmanFilter(
+    double deltaT,
+    double initialGpsAccuracy,
+  ) {
     A = Matrix([
       [0, 0, 1, 0],
       [0, 0, 0, 1],
@@ -47,6 +50,17 @@ class KalmanFilter {
     ]);
     QTerm = Gd * Q * Gd.transpose();
     _updateRMatrix(initialGpsAccuracy);
+
+    // Initialize at position 0 with no velocity
+    xCorrect = Vector.fillColumn(4);
+
+    // Initialize with the 0 Covariance
+    pCorrect = Matrix([
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+    ]);
   }
 
   /// Noise Variance
