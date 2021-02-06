@@ -1,5 +1,4 @@
-﻿import 'dart:async';
-import 'dart:math';
+﻿import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:linalg/linalg.dart';
 import 'package:motion_sensors/motion_sensors.dart';
@@ -7,6 +6,7 @@ import 'package:sensors/sensors.dart';
 
 class IMU {
   final globalAcceleration = ValueNotifier(Vector.fillColumn(3));
+  Vector globalAccelerationEN = Vector.fillColumn(2);
 
   Vector _localAcceleration = Vector.fillColumn(3);
   Vector _initialAcceleration = Vector.fillColumn(3);
@@ -52,13 +52,11 @@ class IMU {
     });
   }
 
-  void initializeImu() {
-    setReferenceSystem();
-    Timer.periodic(Duration(milliseconds: 10), (timer) {
-      _orientation += calculateOrientationChange(1 / 100);
-      final rotatedAcceleration = rotateBackToOriginalSystem(_localAcceleration);
-      calculateGlobalAcceleration(rotatedAcceleration);
-    });
+  Vector getAcceleration() {
+    _orientation += calculateOrientationChange(1 / 100);
+    final rotatedAcceleration = rotateBackToOriginalSystem(_localAcceleration);
+    calculateGlobalAcceleration(rotatedAcceleration);
+    return globalAccelerationEN;
   }
 
   void calculateGlobalAcceleration(Vector rotatedAcceleration) {
@@ -83,6 +81,10 @@ class IMU {
       rotatedAcceleration[2] * _down[2],
     ]);
     globalAcceleration.value = x + y + z;
+    globalAccelerationEN = Vector.column([
+      globalAcceleration.value[0],
+      globalAcceleration.value[1],
+    ]);
   }
 
   Vector rotateBackToOriginalSystem(Vector acceleration) {
