@@ -44,31 +44,72 @@ class KalmanFilter {
       [accelerometerSigmaSquared, 0],
       [0, accelerometerSigmaSquared]
     ]);
+    QTerm = Gd * Q * Gd.transpose();
     _updateRMatrix(initialGpsAccuracy);
   }
 
   /// Noise Variance
   final accelerometerSigmaSquared = 0.05 * 0.05;
 
-  // ignore: non_constant_identifier_names
-  Matrix Ad;
+  /// General Matrices for the Kalman Filter.
   Matrix A;
-  // ignore: non_constant_identifier_names
-  Matrix Bd;
   Matrix B;
+
+  /// Discrete Matrices for each step.
+  Matrix Ad;
+  Matrix Bd;
   Matrix C;
   Matrix D;
-  // ignore: non_constant_identifier_names
   Matrix Gd;
   Matrix Q;
+  Matrix QTerm;
   Matrix R;
+  final fourIdentity = Matrix.eye(4);
 
+  /// Kalman Filter approximation
+  ///
+  /// Prediction Vector
+  Vector xPredict;
+
+  /// Prediction covariance Matrix
+  Matrix pPredict;
+
+  /// Correction Vector
+  Vector xCorrect;
+
+  /// Correction covariance Matrix
+  Matrix pCorrect;
+
+  /// Updates the covariances Matrix for the accuracy of the GPS
   void _updateRMatrix(double accuracy) {
     R = Matrix([
-      [_gpsSigmaSquared(accuracy), 0],
-      [0, _gpsSigmaSquared(accuracy)],
+      [_sigmaSquared(accuracy), 0],
+      [0, _sigmaSquared(accuracy)],
     ]);
   }
 
-  double _gpsSigmaSquared(double accuracy) => accuracy * accuracy;
+  /// Squares the given accuracy
+  double _sigmaSquared(double accuracy) => accuracy * accuracy;
+
+  /// Performs a step of the Kalman Filter. This should be called every
+  /// time one gets new Data.
+  /// For Sensor Fusion this is every 1/100s for the Accelerometer and every 1s for
+  /// the GPS.
+  void filter(
+    Vector y,
+    Vector u,
+    double currentGpsAccuracy,
+  ) {
+    _updateRMatrix(currentGpsAccuracy);
+
+    // Predict
+    xPredict = (Ad * xCorrect).toVector() + (Bd * u).toVector();
+    pPredict = Ad * pCorrect * Ad.transpose() + QTerm;
+
+    // Correct
+    final S = C * pPredict * C.transpose() + R;
+    final K = pPredict * C * S.inverse();
+    xCorrect = xPredict + (K * (y - ((C * xPredict) - (D * u)).toVector())).toVector();
+    pCorrect = (fourIdentity - (K * C)) * pPredict;
+  }
 }
