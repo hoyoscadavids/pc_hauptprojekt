@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.purple,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       home: MainPage(),
@@ -46,13 +46,14 @@ class _MainPageState extends State<MainPage> {
 
   int timeOffset = 0;
 
+  String text = "Start";
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
         child: RaisedButton(
           onPressed: _onStart,
-          child: Text("Start"),
+          child: Text(text),
         ),
       ),
     );
@@ -61,7 +62,7 @@ class _MainPageState extends State<MainPage> {
   void _onStart() async {
     // Read Initial position
     final initialPosition = await gps.determinePosition();
-
+    currentGpsAccuracy = initialPosition.accuracy;
     // Set reference values
     imu.setReferenceSystem();
     positionReference = LatLng(
@@ -83,6 +84,7 @@ class _MainPageState extends State<MainPage> {
       if (timeOffset >= 100) {
         // If new dta from GPS, use it.
         final calculatedPosition = await gps.determinePosition();
+        currentGpsAccuracy = calculatedPosition.accuracy;
         currentGpsPosition = DistanceCalculator.calculate(
           positionReference,
           LatLng(calculatedPosition.latitude, calculatedPosition.longitude),
@@ -102,6 +104,11 @@ class _MainPageState extends State<MainPage> {
         currentAcceleration,
         currentGpsAccuracy,
       );
+
+      setState(() {
+        text = "East: ${kalmanFilter.xCorrect[0]}\n"
+            "North: ${kalmanFilter.xCorrect[1]}";
+      });
     });
   }
 }

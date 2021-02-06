@@ -123,7 +123,7 @@ class KalmanFilter {
 
     // Correct
     final S = C * pPredict * C.transpose() + R;
-    final K = pPredict * C * S.inverse();
+    final K = pPredict * C.transpose() * S.inverse();
     xCorrect = xPredict + (K * (y - ((C * xPredict) - (D * u)).toVector())).toVector();
     pCorrect = (fourIdentity - (K * C)) * pPredict;
   }
