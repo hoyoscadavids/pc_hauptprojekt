@@ -1,6 +1,7 @@
 ﻿import 'package:linalg/linalg.dart';
 
 class KalmanFilter {
+  // TODO(shc): Calculate real deltaT?
   KalmanFilter(double deltaT, double initialGpsAccuracy) {
     A = Matrix([
       [0, 0, 1, 0],
