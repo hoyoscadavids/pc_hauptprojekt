@@ -37,10 +37,10 @@ class _MainPageState extends State<MainPage> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(Duration(milliseconds: 100), () {
+    Future.delayed(Duration(milliseconds: 500), () {
       imu.initializeImu();
       Timer.periodic(Duration(seconds: 1), (timer) async {
-        await gps.determinePosition();
+        final position = await gps.determinePosition();
       });
     });
   }
@@ -49,13 +49,10 @@ class _MainPageState extends State<MainPage> {
   Widget build(BuildContext context) {
     imu.globalAcceleration.addListener(() {
       text = "East " +
-          imu.globalAcceleration.value[0].toInt().toString() +
+          imu.globalAcceleration.value[0].toString() +
           "\n\n" +
           "North " +
-          imu.globalAcceleration.value[1].toInt().toString() +
-          "\n\n" +
-          "Down " +
-          imu.globalAcceleration.value[2].toInt().toString();
+          imu.globalAcceleration.value[1].toString();
       setState(() {});
     });
 
