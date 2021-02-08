@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:linalg/linalg.dart';
 import 'package:pc_hauptprojekt/location_detection/IMU.dart';
 import 'package:pc_hauptprojekt/location_detection/kalman_filter.dart';
+import 'package:pc_hauptprojekt/location_detection/kalman_filter_input.dart';
 import 'package:pc_hauptprojekt/location_detection/lat_lng.dart';
 import 'package:pc_hauptprojekt/utils/distance_calculator.dart';
 
@@ -39,6 +40,9 @@ class _MainPageState extends State<MainPage> {
   final positions = <Vector>[];
   KalmanFilter kalmanFilter;
 
+  double newT;
+  double oldT;
+
   /// Reference Vector for the Position in LatLng
   LatLng positionReference;
   Vector currentGpsPosition;
@@ -58,14 +62,28 @@ class _MainPageState extends State<MainPage> {
                 onPressed: _onStart,
                 child: Text(text),
               )
-            : CustomPaint(
-                painter: PositionPainter(positions),
+            : Stack(
+                alignment: Alignment.center,
+                children: [
+                  CustomPaint(
+                    painter: PositionPainter(positions),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 48),
+                    child: Align(
+                      alignment: Alignment.bottomCenter,
+                      child: Text(text),
+                    ),
+                  )
+                ],
               ),
       ),
     );
   }
 
   void _onStart() async {
+    oldT = DateTime.now().millisecondsSinceEpoch.toDouble();
+    newT = oldT;
     // Read Initial position
     final initialPosition = await gps.determinePosition();
     currentGpsAccuracy = initialPosition.accuracy;
@@ -78,12 +96,14 @@ class _MainPageState extends State<MainPage> {
 
     // Initialize Kalman Filter
     kalmanFilter = KalmanFilter(
-      1 / 100,
       initialPosition.accuracy,
     );
 
     // Perform Reading and filtering every 1/100 seconds.
     Timer.periodic(Duration(milliseconds: 10), (timer) async {
+      oldT = newT;
+      newT = DateTime.now().millisecondsSinceEpoch.toDouble();
+      final deltaT = newT - oldT;
       currentAcceleration = imu.getAcceleration();
 
       // Check the GPS every 1s
@@ -97,26 +117,26 @@ class _MainPageState extends State<MainPage> {
         );
         timeOffset = 0;
       } else {
-        // If not new Data from GPS, use the predicted location.
-        currentGpsPosition = Vector.column([
-          kalmanFilter.xCorrect[0],
-          kalmanFilter.xCorrect[1],
-        ]);
         timeOffset++;
       }
-
       kalmanFilter.filter(
-        currentGpsPosition,
-        currentAcceleration,
+        Vector.column([
+          0, 0,
+          // ...currentGpsPosition.toList(),
+          ...currentAcceleration.toList(),
+        ]),
         currentGpsAccuracy,
+        deltaT / 1000,
       );
     });
 
     Timer.periodic(Duration(milliseconds: 100), (timer) {
       setState(() {
+        //positions.clear();
         positions.add(kalmanFilter.xCorrect);
-        print(
-          currentAcceleration.toString());
+        text = "GPS Accuracy: $currentGpsAccuracy\n"
+            "Estimated P/V/A ${kalmanFilter.xCorrect}\n"
+            "Unfiltered Acceleration: $currentAcceleration\n";
       });
     });
   }
@@ -129,11 +149,10 @@ class PositionPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final pointMode = PointMode.points;
     final points = positions
         .map((position) => Offset(
               position[0] * modifier,
-              position[1] * modifier,
+              -position[1] * modifier,
             ))
         .toList();
 
@@ -141,7 +160,7 @@ class PositionPainter extends CustomPainter {
       ..color = Colors.black
       ..strokeWidth = 4
       ..strokeCap = StrokeCap.round;
-    canvas.drawPoints(pointMode, points, paint);
+    canvas.drawPoints(PointMode.points, points, paint);
   }
 
   @override
