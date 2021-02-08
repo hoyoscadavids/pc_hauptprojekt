@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:linalg/linalg.dart';
@@ -35,7 +36,7 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   final imu = IMU();
   final gps = Gps();
-
+  final positions = <Vector>[];
   KalmanFilter kalmanFilter;
 
   /// Reference Vector for the Position in LatLng
@@ -47,14 +48,19 @@ class _MainPageState extends State<MainPage> {
   int timeOffset = 0;
 
   String text = "Start";
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: RaisedButton(
-          onPressed: _onStart,
-          child: Text(text),
-        ),
+        child: positions.isEmpty
+            ? RaisedButton(
+                onPressed: _onStart,
+                child: Text(text),
+              )
+            : CustomPaint(
+                painter: PositionPainter(positions),
+              ),
       ),
     );
   }
@@ -104,11 +110,42 @@ class _MainPageState extends State<MainPage> {
         currentAcceleration,
         currentGpsAccuracy,
       );
+    });
 
+    Timer.periodic(Duration(milliseconds: 100), (timer) {
       setState(() {
-        text = "East: ${kalmanFilter.xCorrect[0]}\n"
-            "North: ${kalmanFilter.xCorrect[1]}";
+        positions.add(kalmanFilter.xCorrect);
+        print(
+          currentAcceleration.toString());
       });
     });
+  }
+}
+
+class PositionPainter extends CustomPainter {
+  PositionPainter(this.positions);
+  final List<Vector> positions;
+  static const modifier = 10;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final pointMode = PointMode.points;
+    final points = positions
+        .map((position) => Offset(
+              position[0] * modifier,
+              position[1] * modifier,
+            ))
+        .toList();
+
+    final paint = Paint()
+      ..color = Colors.black
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round;
+    canvas.drawPoints(pointMode, points, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return true;
   }
 }
