@@ -4,6 +4,8 @@ PODS:
     - Flutter
   - motion_sensors (0.0.1):
     - Flutter
+  - path_provider (0.0.1):
+    - Flutter
   - sensors (0.0.1):
     - Flutter
 
@@ -11,6 +13,7 @@ DEPENDENCIES:
   - Flutter (from `Flutter`)
   - geolocator (from `.symlinks/plugins/geolocator/ios`)
   - motion_sensors (from `.symlinks/plugins/motion_sensors/ios`)
+  - path_provider (from `.symlinks/plugins/path_provider/ios`)
   - sensors (from `.symlinks/plugins/sensors/ios`)
 
 EXTERNAL SOURCES:
@@ -20,6 +23,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/geolocator/ios"
   motion_sensors:
     :path: ".symlinks/plugins/motion_sensors/ios"
+  path_provider:
+    :path: ".symlinks/plugins/path_provider/ios"
   sensors:
     :path: ".symlinks/plugins/sensors/ios"
 
@@ -27,6 +32,7 @@ SPEC CHECKSUMS:
   Flutter: 434fef37c0980e73bb6479ef766c45957d4b510c
   geolocator: 057a0c63a43e9c5296d8ad845a3ac8e6df23d899
   motion_sensors: 03f55b7c637a7e365a0b5f9697a449f9059d5d91
+  path_provider: abfe2b5c733d04e238b0d8691db0cfd63a27a93c
   sensors: 84eb7a30e47a649e4172b71d6e81be614c280336
 
 PODFILE CHECKSUM: aafe91acc616949ddb318b77800a7f51bffa2a4c

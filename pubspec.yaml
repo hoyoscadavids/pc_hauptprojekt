@@ -28,7 +28,9 @@ dependencies:
     git:  
       url: https://github.com/zesage/motion_sensors.git
       ref: master
-      
+
+
+  path_provider: ^1.6.27
   geolocator: ^6.1.14
   linalg: ^0.3.2
   sensors: ^0.4.2+6

@@ -7,7 +7,7 @@ class Positions {
 
   Map<String, dynamic> toJson() {
     return {
-      'positions': positions.map((position) => position.toJson()),
+      'positions': positions.map((position) => position.toJson()).toList(),
     };
   }
 }

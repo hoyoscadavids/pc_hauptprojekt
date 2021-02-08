@@ -1,12 +1,16 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:linalg/linalg.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pc_hauptprojekt/location_detection/IMU.dart';
 import 'package:pc_hauptprojekt/location_detection/kalman_filter.dart';
 import 'package:pc_hauptprojekt/location_detection/kalman_filter_input.dart';
 import 'package:pc_hauptprojekt/location_detection/lat_lng.dart';
+import 'package:pc_hauptprojekt/models/positions.dart';
 import 'package:pc_hauptprojekt/utils/distance_calculator.dart';
 
 import 'location_detection/gps.dart';
@@ -52,15 +56,18 @@ class _MainPageState extends State<MainPage> {
   int timeOffset = 0;
 
   String text = "Start";
+  bool started = false;
+
+  Timer loopTimer;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: positions.isEmpty
+        child: !started
             ? RaisedButton(
                 onPressed: _onStart,
-                child: Text(text),
+                child: Text('Start'),
               )
             : Stack(
                 alignment: Alignment.center,
@@ -72,9 +79,34 @@ class _MainPageState extends State<MainPage> {
                     padding: const EdgeInsets.only(bottom: 48),
                     child: Align(
                       alignment: Alignment.bottomCenter,
-                      child: Text(text),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text(text),
+                          RaisedButton(
+                            onPressed: () async {
+                              final jsonPositions = <Pos>[];
+                              positions.forEach((element) {
+                                jsonPositions.add(Pos(element[0], element[1]));
+                              });
+                              positions.clear();
+                              final jsonData = Positions(jsonPositions);
+                              final directory = await getApplicationDocumentsDirectory();
+                              final file = File("${directory.path}/positions.json");
+
+                              file.writeAsString(jsonEncode(jsonData.toJson()));
+                              setState(() {
+                                loopTimer.cancel();
+                                loopTimer = null;
+                                started = false;
+                              });
+                            },
+                            child: Text('Stop'),
+                          )
+                        ],
+                      ),
                     ),
-                  )
+                  ),
                 ],
               ),
       ),
@@ -99,8 +131,11 @@ class _MainPageState extends State<MainPage> {
       initialPosition.accuracy,
     );
 
+    setState(() {
+      started = true;
+    });
     // Perform Reading and filtering every 1/100 seconds.
-    Timer.periodic(Duration(milliseconds: 10), (timer) async {
+    loopTimer = Timer.periodic(Duration(milliseconds: 10), (timer) async {
       oldT = newT;
       newT = DateTime.now().millisecondsSinceEpoch.toDouble();
       final deltaT = newT - oldT;
@@ -121,16 +156,12 @@ class _MainPageState extends State<MainPage> {
       }
       kalmanFilter.filter(
         Vector.column([
-          0, 0,
-          // ...currentGpsPosition.toList(),
+          ...currentGpsPosition.toList(),
           ...currentAcceleration.toList(),
         ]),
         currentGpsAccuracy,
         deltaT / 1000,
       );
-    });
-
-    Timer.periodic(Duration(milliseconds: 100), (timer) {
       setState(() {
         //positions.clear();
         positions.add(kalmanFilter.xCorrect);
