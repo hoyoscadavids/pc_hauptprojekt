@@ -45,12 +45,14 @@ class KalmanFilter {
   Matrix pCorrect;
 
   /// Updates the covariances Matrix for the accuracy of the GPS
-  void _updateRMatrix(double accuracy) {
-    R = Matrix([
-      [_sigmaSquared(accuracy), 0, 0, 0],
-      [0, _sigmaSquared(accuracy), 0, 0],
-      [0, 0, accelerometerSigmaSquared, 0],
-      [0, 0, 0, accelerometerSigmaSquared],
+  void _updateNoiseMatrix(double accuracy) {
+    Q = Matrix([
+      [_sigmaSquared(accuracy), 0, 0, 0, 0, 0],
+      [0, _sigmaSquared(accuracy), 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, accelerometerSigmaSquared, 0],
+      [0, 0, 0, 0, 0, accelerometerSigmaSquared],
     ]);
   }
 
@@ -80,8 +82,20 @@ class KalmanFilter {
       [0, 0, 0, 0, 1, 0],
       [0, 0, 0, 0, 0, 1]
     ]);
-    _updateRMatrix(currentGpsAccuracy);
 
+    Gd = Matrix([
+      [1, 0, deltaT, 0, deltaT * deltaT / 2, 0],
+      [0, 1, 0, deltaT, 0, deltaT * deltaT / 2],
+      [0, 0, 1, 0, deltaT, 0],
+      [0, 0, 0, 1, 0, deltaT],
+      [0, 0, 0, 0, 1, 0],
+      [0, 0, 0, 0, 0, 1],
+    ]);
+
+    _updateNoiseMatrix(currentGpsAccuracy);
+    R = Matrix.eye(4);
+
+    final QTerm = Gd * Q * Gd.transpose();
     // Predict
     xPredict = (Ad * xCorrect).toVector();
     pPredict = Ad * pCorrect * Ad.transpose();

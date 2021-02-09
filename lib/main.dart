@@ -2,14 +2,14 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui';
-
+import 'package:bezier_chart/bezier_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:linalg/linalg.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pc_hauptprojekt/location_detection/IMU.dart';
 import 'package:pc_hauptprojekt/location_detection/kalman_filter.dart';
-import 'package:pc_hauptprojekt/location_detection/kalman_filter_input.dart';
 import 'package:pc_hauptprojekt/location_detection/lat_lng.dart';
+import 'package:pc_hauptprojekt/location_detection/simulator.dart';
 import 'package:pc_hauptprojekt/models/positions.dart';
 import 'package:pc_hauptprojekt/utils/distance_calculator.dart';
 
@@ -60,55 +60,110 @@ class _MainPageState extends State<MainPage> {
 
   Timer loopTimer;
 
+  final shouldSimulate = false;
   @override
   Widget build(BuildContext context) {
+    // Simulation Data
+    final variance = 100.0;
+    final simulatedPositions = Simulator.simulatePositions(variance, 100);
+    final simulatedAccelerations = Simulator.simulateAcceleration(0.1, 100);
+
+    final simulatedKalman = KalmanFilter(0.2);
+
+    final filteredPositions = <Vector>[];
+    for (var i = 0; i < simulatedPositions.length; i++) {
+      simulatedKalman.filter(
+          Vector.column(
+            [
+              ...simulatedPositions[i].toList(),
+              ...simulatedAccelerations[i].toList(),
+            ],
+          ),
+          variance,
+          i == 0 ? 0 : 1);
+      filteredPositions.add(simulatedKalman.xCorrect);
+    }
+    final list = List.generate(simulatedPositions.length, (index) => index.toDouble());
+
     return Scaffold(
       body: Center(
-        child: !started
-            ? RaisedButton(
-                onPressed: _onStart,
-                child: Text('Start'),
-              )
-            : Stack(
-                alignment: Alignment.center,
-                children: [
-                  CustomPaint(
-                    painter: PositionPainter(positions),
+        child: shouldSimulate
+            ? BezierChart(
+                bezierChartScale: BezierChartScale.CUSTOM,
+                xAxisCustomValues: list,
+                config: BezierChartConfig(
+                  verticalIndicatorStrokeWidth: 3.0,
+                  verticalIndicatorColor: Colors.black26,
+                  showVerticalIndicator: true,
+                  showDataPoints: true,
+                  displayLinesXAxis: true,
+                  backgroundColor: Colors.black,
+                  snap: false,
+                ),
+                series: [
+                  BezierLine(
+                    dataPointFillColor: Colors.black,
+                    data: simulatedPositions
+                        .map(
+                          (e) => DataPoint<double>(value: e[1], xAxis: e[0]),
+                        )
+                        .toList(),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 48),
-                    child: Align(
-                      alignment: Alignment.bottomCenter,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Text(text),
-                          RaisedButton(
-                            onPressed: () async {
-                              final jsonPositions = <Pos>[];
-                              positions.forEach((element) {
-                                jsonPositions.add(Pos(element[0], element[1]));
-                              });
-                              positions.clear();
-                              final jsonData = Positions(jsonPositions);
-                              final directory = await getApplicationDocumentsDirectory();
-                              final file = File("${directory.path}/positions.json");
-
-                              file.writeAsString(jsonEncode(jsonData.toJson()));
-                              setState(() {
-                                loopTimer.cancel();
-                                loopTimer = null;
-                                started = false;
-                              });
-                            },
-                            child: Text('Stop'),
-                          )
-                        ],
-                      ),
-                    ),
+                  BezierLine(
+                    dataPointFillColor: Colors.red,
+                    data: filteredPositions
+                        .map(
+                          (e) => DataPoint<double>(value: e[1], xAxis: e[0]),
+                        )
+                        .toList(),
                   ),
                 ],
-              ),
+              )
+            : !started
+                ? RaisedButton(
+                    onPressed: _onStart,
+                    child: Text('Start'),
+                  )
+                : Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      CustomPaint(
+                        painter: PositionPainter(positions),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 48),
+                        child: Align(
+                          alignment: Alignment.bottomCenter,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Text(text),
+                              RaisedButton(
+                                onPressed: () async {
+                                  final jsonPositions = <Pos>[];
+                                  positions.forEach((element) {
+                                    jsonPositions.add(Pos(element[0], element[1]));
+                                  });
+                                  positions.clear();
+                                  final jsonData = Positions(jsonPositions);
+                                  final directory = await getApplicationDocumentsDirectory();
+                                  final file = File("${directory.path}/positions.json");
+
+                                  file.writeAsString(jsonEncode(jsonData.toJson()));
+                                  setState(() {
+                                    loopTimer.cancel();
+                                    loopTimer = null;
+                                    started = false;
+                                  });
+                                },
+                                child: Text('Stop'),
+                              )
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
       ),
     );
   }
@@ -119,6 +174,8 @@ class _MainPageState extends State<MainPage> {
     // Read Initial position
     final initialPosition = await gps.determinePosition();
     currentGpsAccuracy = initialPosition.accuracy;
+    currentGpsPosition = Vector.fillColumn(2);
+
     // Set reference values
     imu.setReferenceSystem();
     positionReference = LatLng(
@@ -176,7 +233,7 @@ class _MainPageState extends State<MainPage> {
 class PositionPainter extends CustomPainter {
   PositionPainter(this.positions);
   final List<Vector> positions;
-  static const modifier = 10;
+  static const modifier = 5;
 
   @override
   void paint(Canvas canvas, Size size) {
