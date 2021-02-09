@@ -129,8 +129,5 @@ class IMU {
     _down = ~_initialAcceleration.normalize();
     _east = _down.crossProduct(_magnetometerEvent).normalize();
     _north = _east.crossProduct(_down).normalize();
-
-    print("Saved reference system as: ${_north.toString()}   "
-        "${_east.toString()}    ${_down.toString()}");
   }
 }

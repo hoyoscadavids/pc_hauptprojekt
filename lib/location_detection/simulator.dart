@@ -14,6 +14,7 @@ class Simulator {
       accelerations.add(Vector.column([i / 10, i / 10]));
     }
     for (var i = 0; i < samples; i++) {
+
       realPositions.add(Vector.column(
           [accelerations[i][0] * accelerations[i][0] / 2, accelerations[i][1] * accelerations[i][1] / 2]));
     }

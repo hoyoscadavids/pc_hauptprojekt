@@ -1,6 +1,8 @@
 ﻿import 'package:linalg/linalg.dart';
 
-class KalmanFilter {
+import 'kalman_filter_input.dart';
+
+class KalmanFilter extends KalmanFilterSuper {
   // TODO(shc): Calculate real deltaT?
   KalmanFilter(
     double initialGpsAccuracy,
@@ -19,44 +21,13 @@ class KalmanFilter {
     pCorrect = Matrix.eye(6);
   }
 
-  /// General Matrices for the Kalman Filter.
-  Matrix A;
-  Matrix B;
-
-  /// Discrete Matrices for each step.
-  Matrix Ad;
-  Matrix Bd;
-  Matrix C;
-  Matrix D;
-  Matrix Gd;
-  Matrix Q;
-  Matrix QTerm;
-  Matrix R;
-  final sixIdentity = Matrix.eye(6);
-
-  /// Kalman Filter approximation
-  ///
-  /// Prediction Vector
-  Vector xPredict;
-
-  /// Prediction covariance Matrix
-  Matrix pPredict;
-
-  /// Correction Vector
-  Vector xCorrect;
-
-  /// Correction covariance Matrix
-  Matrix pCorrect;
-
   /// Updates the covariances Matrix for the accuracy of the GPS
   void _updateNoiseMatrix(double gpsAccuracy, double accAccuracy) {
     R = Matrix([
-      [_sigmaSquared(gpsAccuracy), 0, 0, 0, 0, 0],
-      [0, _sigmaSquared(gpsAccuracy), 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, _sigmaSquared(accAccuracy), 0],
-      [0, 0, 0, 0, 0, _sigmaSquared(accAccuracy)],
+      [_sigmaSquared(gpsAccuracy), 0, 0, 0],
+      [0, _sigmaSquared(gpsAccuracy), 0, 0],
+      [0, 0, _sigmaSquared(accAccuracy), 0],
+      [0, 0, 0, _sigmaSquared(accAccuracy)],
     ]);
   }
 
@@ -71,8 +42,9 @@ class KalmanFilter {
     Vector y,
     double currentGpsAccuracy,
     double currentAccAccuracy,
-    double deltaT,
-  ) {
+    double deltaT, {
+    Vector u,
+  }) {
     final firstIntegral = deltaT * deltaT / 2;
     final secondIntegral = deltaT * deltaT * deltaT / 6;
     Ad = Matrix([
@@ -89,16 +61,6 @@ class KalmanFilter {
       [0, 0, 0, 0, 1, 0],
       [0, 0, 0, 0, 0, 1]
     ]);
-
-    final integAd = Matrix([
-      [deltaT, 0, firstIntegral, 0, secondIntegral, 0],
-      [0, deltaT, 0, firstIntegral, 0, secondIntegral],
-      [0, 0, deltaT, 0, firstIntegral, 0],
-      [0, 0, 0, deltaT, 0, firstIntegral],
-      [0, 0, 0, 0, deltaT, 0],
-      [0, 0, 0, 0, 0, deltaT]
-    ]);
-
     _updateNoiseMatrix(currentGpsAccuracy, currentAccAccuracy);
     R = Matrix.eye(4);
 
@@ -110,7 +72,7 @@ class KalmanFilter {
     final S = C * pPredict * C.transpose() + R;
     final K = pPredict * C.transpose() * S.inverse();
     xCorrect = xPredict + (K * (y - ((C * xPredict)).toVector())).toVector();
-    pCorrect = (sixIdentity - (K * C)) * pPredict;
+    pCorrect = (Matrix.eye(6) - (K * C)) * pPredict;
   }
 }
 
