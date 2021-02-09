@@ -3,37 +3,29 @@ import 'dart:math';
 import 'package:linalg/linalg.dart';
 
 class Simulator {
-  // Simulates moving Position 1m per call
-  static List<Vector> simulatePositions(double variance, int samples) {
-    final simulatedPositions = <Vector>[];
-    for (var i = 0; i < samples; i++) {
-      final randomVariance = -variance + (Random().nextDouble() * (variance + 1));
-      simulatedPositions.add(
-        Vector.column(
-          [
-            variance + (i + randomVariance),
-            variance + (i + randomVariance),
-          ],
-        ),
-      );
-    }
-    return simulatedPositions;
-  }
+  final realPositions = <Vector>[];
+  final positions = <Vector>[];
+  final accelerations = <Vector>[];
+  void simulate(double accVar, double posVar, int samples) {
+    positions.clear();
+    accelerations.clear();
 
-  // Simulates moving acceleration 0.01m/s2 per call
-  static List<Vector> simulateAcceleration(double variance, int samples) {
-    final simulatedPositions = <Vector>[];
     for (var i = 0; i < samples; i++) {
-      final randomVariance = -variance + (Random().nextDouble() * (variance + 1));
-      simulatedPositions.add(
-        Vector.column(
-          [
-            0 + randomVariance,
-            0 + randomVariance,
-          ],
-        ),
-      );
+      accelerations.add(Vector.column([i / 10, i / 10]));
     }
-    return simulatedPositions;
+    for (var i = 0; i < samples; i++) {
+      realPositions.add(Vector.column(
+          [accelerations[i][0] * accelerations[i][0] / 2, accelerations[i][1] * accelerations[i][1] / 2]));
+    }
+
+    for (var i = 0; i < samples; i++) {
+      final randomVarianceAcc = (Random().nextDouble() * accVar) - accVar / 2;
+      accelerations[i][1] += randomVarianceAcc;
+
+      positions.add(Vector.column(
+          [accelerations[i][0] * accelerations[i][0] / 2, accelerations[i][1] * accelerations[i][1] / 2]));
+      final randomVariancePos = (Random().nextDouble() * posVar) - posVar / 2;
+      positions[i][1] += randomVariancePos;
+    }
   }
 }

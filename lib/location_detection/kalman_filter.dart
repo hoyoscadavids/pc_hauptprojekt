@@ -4,16 +4,20 @@ class KalmanFilter {
   // TODO(shc): Calculate real deltaT?
   KalmanFilter(
     double initialGpsAccuracy,
+    Vector initialPos,
+    Vector initialAcc,
   ) {
     // Initialize at position 0 with no velocity
-    xCorrect = Vector.fillColumn(6);
+    xCorrect = Vector.column([
+      ...initialPos.toList(),
+      0,
+      0,
+      ...initialAcc.toList(),
+    ]);
 
     // Initialize with the 1 Covariance
     pCorrect = Matrix.eye(6);
   }
-
-  /// Noise Variance
-  final accelerometerSigmaSquared = 0.05 * 0.05;
 
   /// General Matrices for the Kalman Filter.
   Matrix A;
@@ -45,14 +49,14 @@ class KalmanFilter {
   Matrix pCorrect;
 
   /// Updates the covariances Matrix for the accuracy of the GPS
-  void _updateNoiseMatrix(double accuracy) {
-    Q = Matrix([
-      [_sigmaSquared(accuracy), 0, 0, 0, 0, 0],
-      [0, _sigmaSquared(accuracy), 0, 0, 0, 0],
+  void _updateNoiseMatrix(double gpsAccuracy, double accAccuracy) {
+    R = Matrix([
+      [_sigmaSquared(gpsAccuracy), 0, 0, 0, 0, 0],
+      [0, _sigmaSquared(gpsAccuracy), 0, 0, 0, 0],
       [0, 0, 0, 0, 0, 0],
       [0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, accelerometerSigmaSquared, 0],
-      [0, 0, 0, 0, 0, accelerometerSigmaSquared],
+      [0, 0, 0, 0, _sigmaSquared(accAccuracy), 0],
+      [0, 0, 0, 0, 0, _sigmaSquared(accAccuracy)],
     ]);
   }
 
@@ -66,11 +70,14 @@ class KalmanFilter {
   void filter(
     Vector y,
     double currentGpsAccuracy,
+    double currentAccAccuracy,
     double deltaT,
   ) {
+    final firstIntegral = deltaT * deltaT / 2;
+    final secondIntegral = deltaT * deltaT * deltaT / 6;
     Ad = Matrix([
-      [1, 0, deltaT, 0, deltaT * deltaT / 2, 0],
-      [0, 1, 0, deltaT, 0, deltaT * deltaT / 2],
+      [1, 0, deltaT, 0, firstIntegral, 0],
+      [0, 1, 0, deltaT, 0, firstIntegral],
       [0, 0, 1, 0, deltaT, 0],
       [0, 0, 0, 1, 0, deltaT],
       [0, 0, 0, 0, 1, 0],
@@ -83,19 +90,18 @@ class KalmanFilter {
       [0, 0, 0, 0, 0, 1]
     ]);
 
-    Gd = Matrix([
-      [1, 0, deltaT, 0, deltaT * deltaT / 2, 0],
-      [0, 1, 0, deltaT, 0, deltaT * deltaT / 2],
-      [0, 0, 1, 0, deltaT, 0],
-      [0, 0, 0, 1, 0, deltaT],
-      [0, 0, 0, 0, 1, 0],
-      [0, 0, 0, 0, 0, 1],
+    final integAd = Matrix([
+      [deltaT, 0, firstIntegral, 0, secondIntegral, 0],
+      [0, deltaT, 0, firstIntegral, 0, secondIntegral],
+      [0, 0, deltaT, 0, firstIntegral, 0],
+      [0, 0, 0, deltaT, 0, firstIntegral],
+      [0, 0, 0, 0, deltaT, 0],
+      [0, 0, 0, 0, 0, deltaT]
     ]);
 
-    _updateNoiseMatrix(currentGpsAccuracy);
+    _updateNoiseMatrix(currentGpsAccuracy, currentAccAccuracy);
     R = Matrix.eye(4);
 
-    final QTerm = Gd * Q * Gd.transpose();
     // Predict
     xPredict = (Ad * xCorrect).toVector();
     pPredict = Ad * pCorrect * Ad.transpose();

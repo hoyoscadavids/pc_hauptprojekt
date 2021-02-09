@@ -64,26 +64,32 @@ class _MainPageState extends State<MainPage> {
   @override
   Widget build(BuildContext context) {
     // Simulation Data
-    final variance = 100.0;
-    final simulatedPositions = Simulator.simulatePositions(variance, 100);
-    final simulatedAccelerations = Simulator.simulateAcceleration(0.1, 100);
+    final posVar = 5.0;
+    final accVar = 1.5;
+    final simulator = Simulator();
+    simulator.simulate(accVar, posVar, 100);
 
-    final simulatedKalman = KalmanFilter(0.2);
+    final simulatedKalman = KalmanFilter(
+      posVar,
+      Vector.column([0, 0]),
+      Vector.column([0, 0]),
+    );
 
     final filteredPositions = <Vector>[];
-    for (var i = 0; i < simulatedPositions.length; i++) {
+    for (var i = 0; i < simulator.positions.length; i++) {
       simulatedKalman.filter(
           Vector.column(
             [
-              ...simulatedPositions[i].toList(),
-              ...simulatedAccelerations[i].toList(),
+              ...simulator.positions[i].toList(),
+              ...simulator.accelerations[i].toList(),
             ],
           ),
-          variance,
+          posVar,
+          accVar,
           i == 0 ? 0 : 1);
       filteredPositions.add(simulatedKalman.xCorrect);
     }
-    final list = List.generate(simulatedPositions.length, (index) => index.toDouble());
+    final list = List.generate(simulator.positions.length, (index) => simulator.realPositions[index][0]);
 
     return Scaffold(
       body: Center(
@@ -93,7 +99,7 @@ class _MainPageState extends State<MainPage> {
                 xAxisCustomValues: list,
                 config: BezierChartConfig(
                   verticalIndicatorStrokeWidth: 3.0,
-                  verticalIndicatorColor: Colors.black26,
+                  verticalIndicatorColor: Colors.white,
                   showVerticalIndicator: true,
                   showDataPoints: true,
                   displayLinesXAxis: true,
@@ -102,18 +108,35 @@ class _MainPageState extends State<MainPage> {
                 ),
                 series: [
                   BezierLine(
-                    dataPointFillColor: Colors.black,
-                    data: simulatedPositions
+                    dataPointFillColor: Colors.red,
+                    data: filteredPositions
                         .map(
-                          (e) => DataPoint<double>(value: e[1], xAxis: e[0]),
+                          (e) => DataPoint<double>(
+                            value: posVar + e[1],
+                            xAxis: posVar + e[0],
+                          ),
                         )
                         .toList(),
                   ),
                   BezierLine(
-                    dataPointFillColor: Colors.red,
-                    data: filteredPositions
+                    dataPointFillColor: Colors.black,
+                    data: simulator.realPositions
                         .map(
-                          (e) => DataPoint<double>(value: e[1], xAxis: e[0]),
+                          (e) => DataPoint<double>(
+                            value: posVar + e[1],
+                            xAxis: posVar + e[0],
+                          ),
+                        )
+                        .toList(),
+                  ),
+                  BezierLine(
+                    dataPointFillColor: Colors.purple,
+                    data: simulator.positions
+                        .map(
+                          (e) => DataPoint<double>(
+                            value: posVar + e[1],
+                            xAxis: posVar + e[0],
+                          ),
                         )
                         .toList(),
                   ),
@@ -186,6 +209,8 @@ class _MainPageState extends State<MainPage> {
     // Initialize Kalman Filter
     kalmanFilter = KalmanFilter(
       initialPosition.accuracy,
+      Vector.fillColumn(2),
+      Vector.fillColumn(2),
     );
 
     setState(() {
@@ -217,6 +242,7 @@ class _MainPageState extends State<MainPage> {
           ...currentAcceleration.toList(),
         ]),
         currentGpsAccuracy,
+        0.05,
         deltaT / 1000,
       );
       setState(() {
