@@ -6,26 +6,51 @@ class Simulator {
   final realPositions = <Vector>[];
   final positions = <Vector>[];
   final accelerations = <Vector>[];
-  void simulate(double accVar, double posVar, int samples) {
+  void simulate(double accVar, double posVar, int samples, double deltaT) {
     positions.clear();
     accelerations.clear();
 
     for (var i = 0; i < samples; i++) {
-      accelerations.add(Vector.column([i / 10, i / 10]));
+      var randomAccX = (Random().nextDouble() * 2);
+      var randomAccY = (Random().nextDouble() * 2);
+      if (i > samples / 2) {
+        randomAccX = -randomAccX;
+        randomAccY = -randomAccY;
+      }
+      accelerations.add(Vector.column([randomAccX, randomAccY]));
     }
-    for (var i = 0; i < samples; i++) {
 
-      realPositions.add(Vector.column(
-          [accelerations[i][0] * accelerations[i][0] / 2, accelerations[i][1] * accelerations[i][1] / 2]));
+    for (var i = 0; i < samples; i++) {
+      var lastPos = Vector.column([0, 0]);
+      if (i != 0) {
+        lastPos = Vector.column([realPositions[i - 1][0], realPositions[i - 1][1]]);
+      }
+      realPositions.add(Vector.column([
+        lastPos[0] + accelerations[i][0] * deltaT * deltaT / 2,
+        lastPos[1] + accelerations[i][1] * deltaT * deltaT / 2
+      ]));
+      // if (i % 10 == 0) {
+
+      //  } else {
+      //    positions.add(positions[i - 1]);
+      //  }
     }
 
     for (var i = 0; i < samples; i++) {
       final randomVarianceAcc = (Random().nextDouble() * accVar) - accVar / 2;
+      accelerations[i][0] += randomVarianceAcc;
       accelerations[i][1] += randomVarianceAcc;
 
-      positions.add(Vector.column(
-          [accelerations[i][0] * accelerations[i][0] / 2, accelerations[i][1] * accelerations[i][1] / 2]));
+      var lastPos = Vector.column([0, 0]);
+      if (i != 0) {
+        lastPos = Vector.column([realPositions[i - 1][0], realPositions[i - 1][1]]);
+      }
+      positions.add(Vector.column([
+        lastPos[0] + accelerations[i][0] * deltaT * deltaT / 2,
+        lastPos[1] + accelerations[i][1] * deltaT * deltaT / 2
+      ]));
       final randomVariancePos = (Random().nextDouble() * posVar) - posVar / 2;
+      positions[i][0] += randomVariancePos;
       positions[i][1] += randomVariancePos;
     }
   }

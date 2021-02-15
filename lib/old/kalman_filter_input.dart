@@ -1,45 +1,7 @@
 ﻿import 'package:linalg/linalg.dart';
-
-abstract class KalmanFilterSuper {
-  /// General Matrices for the Kalman Filter.
-  Matrix A;
-  Matrix B;
-
-  /// Discrete Matrices for each step.
-  Matrix Ad;
-  Matrix Bd;
-  Matrix C;
-  Matrix D;
-  Matrix Gd;
-  Matrix Q;
-  Matrix QTerm;
-  Matrix R;
-  final fourIdentity = Matrix.eye(4);
-
-  /// Kalman Filter approximation
-  ///
-  /// Prediction Vector
-  Vector xPredict;
-
-  /// Prediction covariance Matrix
-  Matrix pPredict;
-
-  /// Correction Vector
-  Vector xCorrect;
-
-  /// Correction covariance Matrix
-  Matrix pCorrect;
-  void filter(
-    Vector y,
-    double currentGpsAccuracy,
-    double currentAccAccuracy,
-    double deltaT, {
-    Vector u,
-  });
-}
+import 'package:pc_hauptprojekt/location_detection/kalman_filter_super.dart';
 
 class KalmanFilterWithInput extends KalmanFilterSuper {
-  // TODO(shc): Calculate real deltaT?
   KalmanFilterWithInput(
     double initialGpsAccuracy,
     Vector initialPos,
@@ -104,20 +66,22 @@ class KalmanFilterWithInput extends KalmanFilterSuper {
       [0, deltaT * deltaT / 2]
     ]);
     Gd = Matrix([
-      [deltaT * deltaT / 2, 0],
-      [0, deltaT * deltaT / 2],
-      [deltaT, 0],
-      [0, deltaT]
+      [1, 0, 0, 0],
+      [0, 1, 0, 0],
+      [0, 0, 1, 0],
+      [0, 0, 0, 1]
     ]);
 
     final qPosSigma = currentAccAccuracy * deltaT * deltaT / 2;
     final qVelSigma = currentAccAccuracy * deltaT;
+
     Q = Matrix([
       [_sigmaSquared(qPosSigma), 0, qPosSigma * qVelSigma, 0],
       [0, _sigmaSquared(qPosSigma), 0, qPosSigma * qVelSigma],
       [0, 0, _sigmaSquared(qVelSigma), 0],
       [0, 0, 0, _sigmaSquared(qVelSigma)],
     ]);
+
     QTerm = Gd * Q * Gd.transpose();
     R = Matrix([
       [_sigmaSquared(currentGpsAccuracy), 0],

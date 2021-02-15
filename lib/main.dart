@@ -2,15 +2,14 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui';
-import 'package:bezier_chart/bezier_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:linalg/linalg.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pc_hauptprojekt/location_detection/IMU.dart';
-import 'package:pc_hauptprojekt/location_detection/kalman_filter.dart';
-import 'package:pc_hauptprojekt/location_detection/kalman_filter_input.dart';
+import 'package:pc_hauptprojekt/location_detection/kalman_filter_super.dart';
+import 'package:pc_hauptprojekt/old/kalman_filter_input.dart';
 import 'package:pc_hauptprojekt/location_detection/lat_lng.dart';
-import 'package:pc_hauptprojekt/location_detection/simulator.dart';
+import 'package:pc_hauptprojekt/models/line_chart.dart';
 import 'package:pc_hauptprojekt/models/positions.dart';
 import 'package:pc_hauptprojekt/utils/distance_calculator.dart';
 
@@ -64,83 +63,13 @@ class _MainPageState extends State<MainPage> {
   final shouldSimulate = true;
   @override
   Widget build(BuildContext context) {
-    // Simulation Data
-    final posVar = 10.0;
-    final accVar = 1.5;
-    final simulator = Simulator();
-    simulator.simulate(accVar, posVar, 100);
-
-    final simulatedKalman = KalmanFilter(
-      posVar,
-      Vector.column([0, 0]),
-      Vector.column([0, 0]),
-    );
-
-    final filteredPositions = <Vector>[];
-    for (var i = 0; i < simulator.positions.length; i++) {
-      simulatedKalman.filter(
-          Vector.column(
-            [
-              ...simulator.positions[i].toList(),
-              ...simulator.accelerations[i].toList(),
-            ],
-          ),
-          posVar,
-          accVar,
-          i == 0 ? 0 : 1);
-      filteredPositions.add(simulatedKalman.xCorrect);
-    }
-    final list = List.generate(simulator.positions.length, (index) => simulator.realPositions[index][0]);
-
     return Scaffold(
       body: Center(
         child: shouldSimulate
-            ? BezierChart(
-                bezierChartScale: BezierChartScale.CUSTOM,
-                xAxisCustomValues: list,
-                config: BezierChartConfig(
-                  verticalIndicatorStrokeWidth: 3.0,
-                  verticalIndicatorColor: Colors.white,
-                  showVerticalIndicator: true,
-                  showDataPoints: true,
-                  displayLinesXAxis: true,
-                  backgroundColor: Colors.black,
-                  snap: false,
-                ),
-                series: [
-                  BezierLine(
-                    dataPointFillColor: Colors.red,
-                    data: filteredPositions
-                        .map(
-                          (e) => DataPoint<double>(
-                            value: posVar + e[1],
-                            xAxis: posVar + e[0],
-                          ),
-                        )
-                        .toList(),
-                  ),
-                  BezierLine(
-                    dataPointFillColor: Colors.black,
-                    data: simulator.realPositions
-                        .map(
-                          (e) => DataPoint<double>(
-                            value: posVar + e[1],
-                            xAxis: posVar + e[0],
-                          ),
-                        )
-                        .toList(),
-                  ),
-                  BezierLine(
-                    dataPointFillColor: Colors.purple,
-                    data: simulator.positions
-                        .map(
-                          (e) => DataPoint<double>(
-                            value: posVar + e[1],
-                            xAxis: posVar + e[0],
-                          ),
-                        )
-                        .toList(),
-                  ),
+            ? PageView(
+                children: [
+                  SimpleLineChart.withSampleData(),
+                  SimpleLineChart.withErrorData(),
                 ],
               )
             : !started
