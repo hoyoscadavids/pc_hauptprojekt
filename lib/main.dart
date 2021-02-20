@@ -67,7 +67,7 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
   bool started = false;
 
   Timer loopTimer;
-  final shouldSimulate = false;
+  final shouldSimulate = true;
   @override
   Widget build(BuildContext context) {
     return Scaffold(

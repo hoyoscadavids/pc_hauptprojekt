@@ -40,11 +40,11 @@ class SimpleLineChart extends StatelessWidget {
   /// Create one series with sample hard coded data.
   static List<charts.Series<Coordinates, double>> _createSampleData() {
     // Simulation Data
-    final posVar = 20.0;
-    final accVar = 0.05;
-    final deltaT = 1.0;
+    final posVar = 10.0;
+    final accVar = 0.001;
+    final deltaT = 0.01;
     simulator = Simulator();
-    simulator.simulate(accVar, posVar, 1000, deltaT);
+    simulator.simulate(accVar, posVar, 50000, deltaT);
 
     final simulatedKalman = KalmanFilter(
       posVar,

@@ -11,13 +11,13 @@ class Simulator {
     accelerations.clear();
 
     for (var i = 0; i < samples; i++) {
-      var randomAccX = (Random().nextDouble() * 2);
-      var randomAccY = (Random().nextDouble() * 2);
-      if (i > samples / 2) {
+      var randomAccX = (Random().nextDouble() * 5);
+      var randomAccY = (Random().nextDouble() * 5);
+    /*  if (i > samples / 2) {
         randomAccX = -randomAccX;
         randomAccY = -randomAccY;
-      }
-      accelerations.add(Vector.column([randomAccX, randomAccY]));
+      }*/
+      accelerations.add(Vector.column([randomAccX, 100]));
     }
 
     for (var i = 0; i < samples; i++) {
@@ -29,11 +29,6 @@ class Simulator {
         lastPos[0] + accelerations[i][0] * deltaT * deltaT / 2,
         lastPos[1] + accelerations[i][1] * deltaT * deltaT / 2
       ]));
-      // if (i % 10 == 0) {
-
-      //  } else {
-      //    positions.add(positions[i - 1]);
-      //  }
     }
 
     for (var i = 0; i < samples; i++) {
@@ -45,10 +40,16 @@ class Simulator {
       if (i != 0) {
         lastPos = Vector.column([realPositions[i - 1][0], realPositions[i - 1][1]]);
       }
-      positions.add(Vector.column([
-        lastPos[0] + accelerations[i][0] * deltaT * deltaT / 2,
-        lastPos[1] + accelerations[i][1] * deltaT * deltaT / 2
-      ]));
+
+      if (i % 100 == 0) {
+        positions.add(Vector.column([
+          lastPos[0] + accelerations[i][0] * deltaT * deltaT / 2,
+          lastPos[1] + accelerations[i][1] * deltaT * deltaT / 2
+        ]));
+      } else {
+        positions.add(positions[i - 1]);
+      }
+
       final randomVariancePos = (Random().nextDouble() * posVar) - posVar / 2;
       positions[i][0] += randomVariancePos;
       positions[i][1] += randomVariancePos;
