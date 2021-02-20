@@ -7,7 +7,7 @@ import 'package:pc_hauptprojekt/location_detection/simulator.dart';
 
 class SimpleLineChart extends StatelessWidget {
   SimpleLineChart(this.seriesList, {this.animate});
-  final List<charts.Series> seriesList;
+  final List<charts.Series<Coordinates, double>> seriesList;
   final bool animate;
 
   static Simulator simulator;
@@ -31,9 +31,10 @@ class SimpleLineChart extends StatelessWidget {
     );
   }
 
+
   @override
   Widget build(BuildContext context) {
-    return new charts.LineChart(seriesList, animate: animate);
+    return new charts.LineChart(seriesList, animate: animate, );
   }
 
   /// Create one series with sample hard coded data.
