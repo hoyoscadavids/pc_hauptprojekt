@@ -61,17 +61,17 @@ class KalmanFilter extends KalmanFilterSuper {
     ]);
 
     Q = Matrix([
-      [_sigmaSquared(currentAccAccuracy), 0, 0, 0],
-      [0, _sigmaSquared(currentAccAccuracy), 0, 0],
-      [0, 0, _sigmaSquared(currentAccAccuracy), 0],
-      [0, 0, 0, _sigmaSquared(currentAccAccuracy)],
+      [0.0002, 0, 0, 0],
+      [0, 0.0002, 0, 0],
+      [0, 0, 0.0002, 0],
+      [0, 0, 0, 0.0002],
     ]);
 
     R = Matrix([
       [_sigmaSquared(currentGpsAccuracy), 0, 0, 0],
       [0, _sigmaSquared(currentGpsAccuracy), 0, 0],
-      [0, 0, _sigmaSquared(currentGpsAccuracy), 0],
-      [0, 0, 0, _sigmaSquared(currentGpsAccuracy)]
+      [0, 0, _sigmaSquared(currentAccAccuracy), 0],
+      [0, 0, 0,_sigmaSquared(currentAccAccuracy)]
     ]);
 
     QTerm = Gd * Q * Gd.transpose();

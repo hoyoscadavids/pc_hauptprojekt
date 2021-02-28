@@ -67,17 +67,19 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
   bool started = false;
 
   Timer loopTimer;
-  final shouldSimulate = true;
+  final shouldSimulate = false;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
         child: shouldSimulate
-            ? PageView(
-                children: [
-                  SimpleLineChart.withSampleData(),
-                  SimpleLineChart.withErrorData(),
-                ],
+            ? SafeArea(
+                child: PageView(
+                  children: [
+                    SimpleLineChart.withSampleData(),
+                    SimpleLineChart.withErrorData(),
+                  ],
+                ),
               )
             : !started
                 ? PageView(
@@ -290,12 +292,6 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
       } else {
         timeOffset++;
       }
-
-      gpsPositionsChart.add(Coordinates(
-        currentGpsPosition[0],
-        currentGpsPosition[1],
-      ));
-
       kalmanFilter.filter(
         Vector.column([
           ...currentGpsPosition.toList(),
@@ -305,6 +301,10 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
         0.05,
         deltaT / 1000,
       );
+      gpsPositionsChart.add(Coordinates(
+        currentGpsPosition[0],
+        currentGpsPosition[1],
+      ));
 
       filteredPositionsChart.add(Coordinates(
         kalmanFilter.xCorrect[0],
@@ -344,8 +344,8 @@ class PositionPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final points = positions
         .map((position) => Offset(
-              position[0] * modifier,
-              -position[1] * modifier,
+              -position[0] * modifier,
+              position[1] * modifier,
             ))
         .toList();
 
@@ -357,8 +357,8 @@ class PositionPainter extends CustomPainter {
 
     final realPoints = realPositions
         .map((position) => Offset(
-              position[0] * modifier,
-              -position[1] * modifier,
+              -position[0] * modifier,
+              position[1] * modifier,
             ))
         .toList();
 

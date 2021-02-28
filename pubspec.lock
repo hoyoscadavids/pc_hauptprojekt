@@ -153,6 +153,13 @@ packages:
       url: "https://github.com/zesage/motion_sensors.git"
     source: git
     version: "0.0.5"
+  normal:
+    dependency: "direct main"
+    description:
+      name: normal
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.5.1"
   path:
     dependency: transitive
     description:

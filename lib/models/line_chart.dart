@@ -12,6 +12,7 @@ class SimpleLineChart extends StatelessWidget {
 
   static Simulator simulator;
   static final errorList = <Coordinates>[];
+  static final errorListNoisyData = <Coordinates>[];
 
   /// Creates a [LineChart] with sample data and no transition.
   factory SimpleLineChart.withSampleData() {
@@ -31,33 +32,31 @@ class SimpleLineChart extends StatelessWidget {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
-    return new charts.LineChart(seriesList, animate: animate, );
+    return new charts.LineChart(
+      seriesList,
+      animate: animate,
+    );
   }
 
   /// Create one series with sample hard coded data.
   static List<charts.Series<Coordinates, double>> _createSampleData() {
     // Simulation Data
     final posVar = 10.0;
-    final accVar = 0.001;
+    final accVar = 0.05;
     final deltaT = 0.01;
     simulator = Simulator();
-    simulator.simulate(accVar, posVar, 50000, deltaT);
+    simulator.simulate(accVar, posVar, 20000, deltaT);
 
     final simulatedKalman = KalmanFilter(
       posVar,
       Vector.column([0, 0]),
       Vector.column([0, 0]),
     );
-    /*final simulatedKalman = KalmanFilterWithInput(
-      posVar,
-      Vector.column([0, 0]),
-      Vector.column([0, 0]),
-    );*/
 
     final filteredPositions = <Vector>[];
+
     for (var i = 0; i < simulator.positions.length; i++) {
       simulatedKalman.filter(
         Vector.column(
@@ -70,16 +69,22 @@ class SimpleLineChart extends StatelessWidget {
         accVar,
         deltaT,
       );
+
       filteredPositions.add(simulatedKalman.xCorrect);
     }
     final list = List.generate(simulator.positions.length, (index) => index.toDouble());
     final realData = simulator.realPositions.map((e) => Coordinates(e[0], e[1])).toList();
+    final realAcc = simulator.realAccelerations.map((e) => Coordinates(e[0], e[1])).toList();
     final noisyData = simulator.positions.map((e) => Coordinates(e[0], e[1])).toList();
+    final noisyAcceleration = simulator.accelerations.map((e) => Coordinates(e[0], e[1])).toList();
     final filteredData = filteredPositions.map((e) => Coordinates(e[0], e[1])).toList();
+    final filteredAcc = filteredPositions.map((e) => Coordinates(e[3], e[4])).toList();
 
     errorList.clear();
+    errorListNoisyData.clear();
     for (var i = 0; i < filteredData.length; i++) {
       errorList.add(Coordinates(filteredData[i].x - realData[i].x, filteredData[i].y - realData[i].y));
+      errorListNoisyData.add(Coordinates(noisyData[i].x - realData[i].x, noisyData[i].y - realData[i].y));
     }
 
     return [
@@ -88,21 +93,21 @@ class SimpleLineChart extends StatelessWidget {
         colorFn: (_, __) => charts.MaterialPalette.blue.shadeDefault,
         domainFn: (Coordinates sales, _) => list[_],
         measureFn: (Coordinates sales, _) => sales.y,
-        data: noisyData,
+        data: noisyAcceleration,
       ),
       charts.Series<Coordinates, double>(
         id: 'Real Positions',
         colorFn: (_, __) => charts.MaterialPalette.black,
         domainFn: (Coordinates sales, _) => list[_],
         measureFn: (Coordinates sales, _) => sales.y,
-        data: realData,
+        data: realAcc,
       ),
       charts.Series<Coordinates, double>(
         id: 'Filtered Positions',
         colorFn: (_, __) => charts.MaterialPalette.purple.shadeDefault,
         domainFn: (Coordinates sales, _) => list[_],
         measureFn: (Coordinates sales, _) => sales.y,
-        data: filteredData,
+        data: filteredAcc,
       ),
     ];
   }
@@ -111,6 +116,13 @@ class SimpleLineChart extends StatelessWidget {
     final list = List.generate(errorList.length, (index) => index.toDouble());
 
     return [
+      charts.Series<Coordinates, double>(
+        id: 'Error Noise',
+        colorFn: (_, __) => charts.MaterialPalette.blue.shadeDefault,
+        domainFn: (Coordinates sales, _) => list[_],
+        measureFn: (Coordinates sales, _) => sales.y,
+        data: errorListNoisyData,
+      ),
       charts.Series<Coordinates, double>(
         id: 'Error',
         colorFn: (_, __) => charts.MaterialPalette.purple.shadeDefault,
